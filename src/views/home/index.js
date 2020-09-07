@@ -5,28 +5,61 @@ import "./styles.scss";
 class Home extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { searchTerm: "" };
+    this.state = {
+      searchTerm: "",
+      nominations: [],
+    };
   }
 
   componentDidMount() {}
+
+  addNomination = (result) => {
+    if (
+      this.state.nominations.length < 5 &&
+      this.state.nominations.filter((obj) => obj.imdbID === result.imdbID)
+        .length === 0
+    ) {
+      this.setState({ nominations: [...this.state.nominations, result] });
+    }
+  };
+
+  removeNomination = (result) => {
+    this.setState({
+      nominations: this.state.nominations.filter((obj) => {
+        return obj.imdbID !== result.imdbID;
+      }),
+    });
+  };
 
   handleInputChange = (event) => {
     this.setState({ searchTerm: event.target.value });
   };
 
   handleSearch = (event) => {
-    console.log("Search term: " + this.state.searchTerm);
+    this.setState({ submittedSearchTerm: this.state.searchTerm });
     axios({
       method: "get",
       url: "http://www.omdbapi.com/",
-      params: { apikey: "", s: this.state.searchTerm },
+      params: { apikey: "****", s: this.state.searchTerm },
     })
       .catch(function (error) {
         console.log(error);
         return error.response;
       })
       .then((response) => {
-        console.log(response.data);
+        let data = response.data;
+        console.log(data);
+        if (data.Response && data.hasOwnProperty("Search")) {
+          this.setState({
+            searchResults: data.Search,
+            searchError: false,
+          });
+        } else {
+          this.setState({
+            searchError: true,
+            searchErrorMsg: data.Error,
+          });
+        }
       });
 
     event.preventDefault();
@@ -36,10 +69,17 @@ class Home extends React.Component {
     return (
       <div className="main">
         <div className="main__container">
-          <div className="main__title">The Shoppies</div>
+          {this.state.nominations.length === 5 && (
+            <div className="success__banner">
+              <div className="success__banner__text">
+                You have successfully selected 5 nominations!
+              </div>
+            </div>
+          )}
+          <div className="main__title">{"The Shoppies"}</div>
 
           <div className="search_container">
-            <div className="search_container__title">Movie title</div>
+            <div className="search_container__title">{"Movie title"}</div>
             <form
               className="search_container__form"
               onSubmit={this.handleSearch}
@@ -54,7 +94,59 @@ class Home extends React.Component {
             </form>
           </div>
 
-          <div className="results_container"></div>
+          <div className="body_container">
+            <div className="results_container">
+              <div className="results_container__title">
+                Results for "{this.state.submittedSearchTerm}"
+              </div>
+              {this.state.searchError ? (
+                <div className="results_container__error">
+                  {this.state.searchErrorMsg}
+                </div>
+              ) : (
+                <ul className="results_container__list">
+                  {this.state.searchResults &&
+                    this.state.searchResults.map((result) => {
+                      return (
+                        <li key={result.imdbID}>
+                          {result.Title} ({result.Year})
+                          <button
+                            disabled={
+                              this.state.nominations.filter(
+                                (obj) => obj.imdbID === result.imdbID
+                              ).length !== 0
+                            }
+                            className="nominate_button"
+                            onClick={() => this.addNomination(result)}
+                          >
+                            Nominate
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+            </div>
+            <div className="nominations_container">
+              <div className="nominations_container__title">Nominations</div>
+              <ul className="nominations_container__list">
+                {this.state.nominations &&
+                  this.state.nominations.map((result) => {
+                    return (
+                      <li key={result.imdbID}>
+                        {result.Title} ({result.Year})
+                        <button
+                          className="remove_button"
+                          onClick={() => this.removeNomination(result)}
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     );
