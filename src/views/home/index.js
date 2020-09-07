@@ -39,7 +39,7 @@ class Home extends React.Component {
     this.setState({ submittedSearchTerm: this.state.searchTerm });
     axios({
       method: "get",
-      url: "http://www.omdbapi.com/",
+      url: "https://www.omdbapi.com/",
       params: { apikey: "****", s: this.state.searchTerm },
     })
       .catch(function (error) {
